@@ -27,10 +27,13 @@ def read_log(filepath):
         pass
     return data
 
-def ascii_graph(values, width=60, height=15, title="", y_label=""):
+def ascii_graph(values, width=60, height=15, title="", y_label="", max_epoch=None):
     """Create an ASCII graph of values."""
     if not values:
         return f"{title}\n  No data yet..."
+
+    if max_epoch is None:
+        max_epoch = len(values)
 
     # Get min/max for scaling
     min_val = min(values)
@@ -70,7 +73,7 @@ def ascii_graph(values, width=60, height=15, title="", y_label=""):
 
     lines.append(f"  {min_val:8.3f} ┤" + "─" * width)
     lines.append(f"           └{'─' * (width//2)}┬{'─' * (width//2)}")
-    lines.append(f"            0{' ' * (width//2 - 2)}epochs{' ' * (width//2 - 6)}{len(values) * 256 if values else 0}")
+    lines.append(f"            0{' ' * (width//2 - 2)}epochs{' ' * (width//2 - 6)}{max_epoch}")
 
     return "\n".join(lines)
 
@@ -115,11 +118,13 @@ def main():
             print()
 
             # Show entropy graph
+            max_ep = data['epoch'][-1] if data['epoch'] else 0
             print(ascii_graph(
                 data['higher_entropy'],
                 width=60,
                 height=12,
-                title="Higher-Order Entropy (complexity metric)"
+                title="Higher-Order Entropy (complexity metric)",
+                max_epoch=max_ep
             ))
             print()
 
@@ -131,7 +136,8 @@ def main():
                     bpb,
                     width=60,
                     height=8,
-                    title="Bits per Byte (compression - lower = more structure)"
+                    title="Bits per Byte (compression - lower = more structure)",
+                    max_epoch=max_ep
                 ))
             print()
 

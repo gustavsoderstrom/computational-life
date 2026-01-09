@@ -18,7 +18,7 @@ import time
 import argparse
 import os
 
-from bff_analysis import save_checkpoint
+from bff_analysis import save_checkpoint, load_checkpoint
 
 # ============================================================================
 # BFF Interpreter
@@ -130,7 +130,7 @@ def evaluate(tape: bytearray, max_steps: int = 32768) -> int:
 # ============================================================================
 
 def run_soup(num_programs=1024, max_epochs=10000, seed=42, log_file=None,
-             checkpoint_dir="checkpoints", checkpoint_interval=256):
+             checkpoint_dir="checkpoints", checkpoint_interval=256, resume_path=None):
     """
     Run the primordial soup simulation.
 
@@ -145,14 +145,26 @@ def run_soup(num_programs=1024, max_epochs=10000, seed=42, log_file=None,
     """
     random.seed(seed)
 
-    # Initialize with random programs
-    soup = [bytearray(random.randint(0, 255) for _ in range(TAPE_SIZE))
-            for _ in range(num_programs)]
+    # Initialize soup (from checkpoint or random)
+    if resume_path:
+        soup, meta = load_checkpoint(resume_path)
+        start_epoch = meta['epoch'] + 1
+        num_programs = meta['num_programs']
+        print(f"Resuming from {resume_path} at epoch {start_epoch}")
+    else:
+        soup = [bytearray(random.randint(0, 255) for _ in range(TAPE_SIZE))
+                for _ in range(num_programs)]
+        start_epoch = 0
 
     # Setup logging
-    log = open(log_file, 'w') if log_file else None
-    if log:
-        log.write("epoch,compressed_size,num_programs,entropy\n")
+    if log_file:
+        if resume_path:
+            log = open(log_file, 'a')  # Append when resuming
+        else:
+            log = open(log_file, 'w')
+            log.write("epoch,brotli_size,num_programs,higher_entropy\n")
+    else:
+        log = None
 
     if checkpoint_dir:
         os.makedirs(checkpoint_dir, exist_ok=True)
@@ -163,7 +175,7 @@ def run_soup(num_programs=1024, max_epochs=10000, seed=42, log_file=None,
 
     start = time.time()
 
-    for epoch in range(max_epochs):
+    for epoch in range(start_epoch, max_epochs):
         random.shuffle(soup)
         total_ops = 0
 
@@ -229,6 +241,8 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint-dir", type=str, default="checkpoints",
                         help="Checkpoint directory (default: checkpoints, use '' to disable)")
     parser.add_argument("--checkpoint-interval", type=int, default=256)
+    parser.add_argument("--resume", type=str, default=None,
+                        help="Resume from checkpoint file")
 
     args = parser.parse_args()
 
@@ -239,4 +253,5 @@ if __name__ == "__main__":
         log_file=args.log if args.log else None,
         checkpoint_dir=args.checkpoint_dir if args.checkpoint_dir else None,
         checkpoint_interval=args.checkpoint_interval,
+        resume_path=args.resume,
     )
