@@ -1,0 +1,21 @@
+# Checkpoints (large binary files)
+checkpoints/
+python_checkpoints/
+*.dat
+
+# Log files (can be regenerated)
+*.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Output files
+*_output.txt
+
+# OS files
+.DS_Store
+
+# cubff repo (external dependency)
+cubff/
