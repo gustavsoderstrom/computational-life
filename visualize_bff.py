@@ -11,7 +11,7 @@ from collections import deque
 
 def read_log(filepath):
     """Read the CSV log file and return data."""
-    data = {'epoch': [], 'brotli_size': [], 'higher_entropy': []}
+    data = {'epoch': [], 'brotli_size': [], 'num_programs': [], 'higher_entropy': []}
     try:
         with open(filepath, 'r') as f:
             lines = f.readlines()
@@ -22,6 +22,7 @@ def read_log(filepath):
                 if len(parts) >= 4:
                     data['epoch'].append(int(parts[0]))
                     data['brotli_size'].append(int(parts[1]))
+                    data['num_programs'].append(int(parts[2]))
                     data['higher_entropy'].append(float(parts[3]))
     except (FileNotFoundError, ValueError):
         pass
@@ -129,9 +130,10 @@ def main():
             print()
 
             # Show compression ratio
-            if data['brotli_size']:
-                # Convert to bits per byte
-                bpb = [size * 8 / (1024 * 64) for size in data['brotli_size']]
+            if data['brotli_size'] and data['num_programs']:
+                # Convert to bits per byte (use actual num_programs from log)
+                bpb = [size * 8 / (num_prog * 64)
+                       for size, num_prog in zip(data['brotli_size'], data['num_programs'])]
                 print(ascii_graph(
                     bpb,
                     width=60,
