@@ -53,6 +53,19 @@ python3 bff_soup.py --num 1024 --epochs 50000
 --log FILE           Log file path (default: bff_soup.log, use '' to disable)
 --checkpoint-dir DIR Checkpoint directory (default: checkpoints/, use '' to disable)
 --checkpoint-interval N  Save checkpoint every N epochs (default: 256)
+--resume FILE        Resume simulation from checkpoint file
+```
+
+### Resuming from Checkpoint
+
+If a run is interrupted or you want to extend it, resume from the latest checkpoint:
+
+```bash
+# Find the latest checkpoint
+ls -t checkpoints/*.dat | head -1
+
+# Resume and run to 50000 epochs
+pypy3 bff_soup.py --resume checkpoints/0000010240.dat --epochs 50000
 ```
 
 ### Analyzing Results
