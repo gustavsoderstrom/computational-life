@@ -49,6 +49,25 @@ def print_top_programs(soup, top_n=10):
         print(f"  {count:5d} ({pct:5.1f}%)  {display}")
 
 
+def save_checkpoint(soup, epoch, checkpoint_path):
+    """
+    Save soup state to a checkpoint file.
+
+    Args:
+        soup: List of bytearrays (programs)
+        epoch: Current epoch number
+        checkpoint_path: Path to save the checkpoint
+    """
+    with open(checkpoint_path, 'wb') as f:
+        f.write(b'BFFS')
+        f.write(len(soup).to_bytes(4, 'little'))
+        f.write(TAPE_SIZE.to_bytes(4, 'little'))
+        f.write(epoch.to_bytes(4, 'little'))
+        f.write(b'\x00' * 8)  # padding
+        for prog in soup:
+            f.write(prog)
+
+
 def load_checkpoint(checkpoint_path):
     """
     Load a checkpoint file and return the soup.

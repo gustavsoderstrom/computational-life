@@ -16,6 +16,9 @@ import random
 import zlib
 import time
 import argparse
+import os
+
+from bff_analysis import save_checkpoint
 
 # ============================================================================
 # BFF Interpreter
@@ -127,7 +130,7 @@ def evaluate(tape: bytearray, max_steps: int = 32768) -> int:
 # ============================================================================
 
 def run_soup(num_programs=1024, max_epochs=10000, seed=42, log_file=None,
-             checkpoint_dir=None, checkpoint_interval=256):
+             checkpoint_dir="checkpoints", checkpoint_interval=256):
     """
     Run the primordial soup simulation.
 
@@ -140,7 +143,6 @@ def run_soup(num_programs=1024, max_epochs=10000, seed=42, log_file=None,
     If a program happens to copy itself onto its partner, it replicates!
     Over time, successful replicators take over the soup.
     """
-    import os
     random.seed(seed)
 
     # Initialize with random programs
@@ -184,21 +186,15 @@ def run_soup(num_programs=1024, max_epochs=10000, seed=42, log_file=None,
         compressed = zlib.compress(data, level=9)
         entropy = 8.0 - (len(compressed) * 8 / len(data))
 
-        # Log and checkpoint
+        # Log progress
         if log:
             log.write(f"{epoch},{len(compressed)},{num_programs},{entropy:.6f}\n")
             log.flush()
 
+        # Save checkpoint
         if checkpoint_dir and epoch % checkpoint_interval == 0:
             path = os.path.join(checkpoint_dir, f"{epoch:010d}.dat")
-            with open(path, 'wb') as f:
-                f.write(b'BFFS')
-                f.write(num_programs.to_bytes(4, 'little'))
-                f.write(TAPE_SIZE.to_bytes(4, 'little'))
-                f.write(epoch.to_bytes(4, 'little'))
-                f.write(b'\x00' * 8)
-                for prog in soup:
-                    f.write(prog)
+            save_checkpoint(soup, epoch, path)
 
         # Print progress
         if epoch % 100 == 0:
@@ -228,8 +224,10 @@ if __name__ == "__main__":
     parser.add_argument("--num", type=int, default=1024, help="Number of programs")
     parser.add_argument("--epochs", type=int, default=10000, help="Max epochs")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
-    parser.add_argument("--log", type=str, help="Log file for visualization")
-    parser.add_argument("--checkpoint-dir", type=str, help="Checkpoint directory")
+    parser.add_argument("--log", type=str, default="bff_soup.log",
+                        help="Log file (default: bff_soup.log, use '' to disable)")
+    parser.add_argument("--checkpoint-dir", type=str, default="checkpoints",
+                        help="Checkpoint directory (default: checkpoints, use '' to disable)")
     parser.add_argument("--checkpoint-interval", type=int, default=256)
 
     args = parser.parse_args()
@@ -238,7 +236,7 @@ if __name__ == "__main__":
         num_programs=args.num,
         max_epochs=args.epochs,
         seed=args.seed,
-        log_file=args.log,
-        checkpoint_dir=args.checkpoint_dir,
+        log_file=args.log if args.log else None,
+        checkpoint_dir=args.checkpoint_dir if args.checkpoint_dir else None,
         checkpoint_interval=args.checkpoint_interval,
     )
