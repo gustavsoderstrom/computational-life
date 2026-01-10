@@ -37,10 +37,10 @@ pip install numba numpy
 # Expect ~4-5 hours to transition
 python3 bff_soup.py --num 131072 --epochs 20000
 
-# In a separate terminal, watch the progress
+# In a separate terminal, watch the progress. E.g. (always stored in bff_soup.log unless specified differently on start of bff_soup.py)
 python3 visualize_bff.py bff_soup.log
 
-# Zoom in on last 500 epochs to see transition detail
+# Zoom in on last 500 epochs to see transition detail E.g.
 python3 visualize_bff.py bff_soup.log --last 500
 ```
 
@@ -61,16 +61,16 @@ python3 visualize_bff.py bff_soup.log --last 500
 If a run is interrupted or you want to extend it, resume from the latest checkpoint:
 
 ```bash
-# Find the latest checkpoint
+# Find the latest checkpoint. E.g. (with the .dat file for that specific run)
 ls -t checkpoints/*.dat | head -1
 
-# Resume and run to 50000 epochs
+# Resume and run to 50000 epochs E.g. (with the .dat file for that specific run)
 python3 bff_soup.py --resume checkpoints/0000010240.dat --epochs 50000
 ```
 
 ### Analyzing Results
 
-After a run (or during), examine emergent replicators:
+# After a run (or during), examine emergent replicators: E.g. (with the .dat file for that specific run)
 
 ```bash
 python3 bff_analysis.py checkpoints/0000001024.dat --top 10
