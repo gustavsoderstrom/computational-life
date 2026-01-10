@@ -105,16 +105,37 @@ cd ..
 python3 visualize_bff.py bff_run.log
 ```
 
+## Metrics Explained
+
+The simulation tracks two metrics based on compression (zlib in Python, Brotli in cubff):
+
+**Higher-Order Entropy** (complexity metric):
+```
+entropy = 8.0 - (compressed_size × 8 / original_size)
+```
+- Measures "bits saved per byte" through compression
+- **Random soup ≈ 0**: Incompressible noise, no patterns
+- **Structured soup > 3**: Repetitive patterns (replicators) compress well
+- A sudden spike indicates phase transition — replicators have taken over
+
+**Bits per Byte** (compression ratio):
+```
+bpb = compressed_size × 8 / original_size
+```
+- Inverse of entropy: how many bits needed per byte after compression
+- **Random soup ≈ 8 bpb**: No compression possible
+- **Structured soup < 5 bpb**: Significant compression = replicators present
+
 ## What to Look For
 
 In the visualizer:
-- **🔴 Pre-life**: Entropy near 0, random noise
+- **🔴 Pre-life**: Entropy near 0, ~8 bpb, random noise
 - **🟡 Evolving**: Entropy 1-3, structure forming
-- **🟢 TRANSITION**: Entropy spikes to 4-6, replicators have emerged!
+- **🟢 TRANSITION**: Entropy spikes to 4-6, bpb drops below 4, replicators have emerged!
 
 A successful transition typically shows:
-- Sudden entropy spike
-- Compression ratio drops (more structure = more compressible)
+- Sudden entropy spike (0 → 4+)
+- Bits per byte drops (8 → 4 or lower)
 - Operations per pair jumps from hundreds to thousands
 
 ## References
