@@ -92,7 +92,7 @@ def status_line(data):
     max_entropy = max(data['higher_entropy']) if data['higher_entropy'] else 0
     status = "🔴 Pre-life" if max_entropy < 1.0 else "🟢 TRANSITION DETECTED!" if max_entropy > 3.0 else "🟡 Evolving..."
 
-    return f"Epoch: {epoch:,} | Entropy: {entropy:.4f} | Max Entropy: {max_entropy:.4f} | Brotli: {brotli:,} | {status}"
+    return f"Epoch: {epoch:,} | Entropy: {entropy:.4f} | Max Entropy: {max_entropy:.4f} | Compressed: {brotli:,} | {status}"
 
 def main():
     if len(sys.argv) < 2:
