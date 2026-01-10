@@ -16,6 +16,8 @@ This demonstrates how **self-replicating programs can emerge spontaneously** fro
 
 The **phase transition** is detected when higher-order entropy spikes above 3.0, indicating structured replicators have emerged from random noise.
 
+**No mutation:** This implementation deliberately uses no external mutation. Programs only change through self-modification during BFF execution. This demonstrates the paper's key insight — self-replicators can emerge purely from program interactions without any external randomness or mutation pressure.
+
 ## Files
 
 | File | Description |
