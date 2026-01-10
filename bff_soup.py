@@ -1,66 +1,65 @@
 #!/usr/bin/env python3
 """
-Pure Python BFF Primordial Soup Simulation
+Numba-accelerated BFF Primordial Soup Simulation
 
-A simple, educational implementation of the BFF (Brainfuck variant) primordial soup
+A fast implementation of the BFF (Brainfuck variant) primordial soup
 experiment from "Computational Life" by Blaise Aguera y Arcas et al.
-
-This demonstrates how self-replicating programs can emerge spontaneously from
-random programs through self-modification.
+Requires: pip install numba numpy
 
 Usage:
     python bff_soup.py [--num 1024] [--epochs 10000] [--seed 42]
 """
 
-import random
-import zlib
+import numpy as np
+from numba import jit
 import time
 import argparse
 import os
 
-from bff_analysis import save_checkpoint, load_checkpoint
+from bff_analysis import save_checkpoint
 
 # ============================================================================
-# BFF Interpreter
+# BFF Interpreter (Numba-compatible)
 # ============================================================================
 
-TAPE_SIZE = 64       # Size of each program
-COMBINED_SIZE = 128  # Two programs concatenated
+TAPE_SIZE = 64
+COMBINED_SIZE = 128
 
-# BFF instruction set (ASCII codes)
-LOOP_START = ord('[')      # Jump to ] if cell at head0 is 0
-LOOP_END = ord(']')        # Jump back to [ if cell at head0 is not 0
-PLUS = ord('+')            # Increment cell at head0
-MINUS = ord('-')           # Decrement cell at head0
-COPY_TO_HEAD1 = ord('.')   # tape[head1] = tape[head0]
-COPY_TO_HEAD0 = ord(',')   # tape[head0] = tape[head1]  <-- KEY for replication!
-DEC_HEAD0 = ord('<')       # head0 -= 1
-INC_HEAD0 = ord('>')       # head0 += 1
-DEC_HEAD1 = ord('{')       # head1 -= 1
-INC_HEAD1 = ord('}')       # head1 += 1
+# BFF instruction set (pre-computed as ints for Numba)
+LOOP_START = 91      # ord('[')
+LOOP_END = 93        # ord(']')
+PLUS = 43            # ord('+')
+MINUS = 45           # ord('-')
+COPY_TO_HEAD1 = 46   # ord('.')
+COPY_TO_HEAD0 = 44   # ord(',')
+DEC_HEAD0 = 60       # ord('<')
+INC_HEAD0 = 62       # ord('>')
+DEC_HEAD1 = 123      # ord('{')
+INC_HEAD1 = 125      # ord('}')
 
 
-def evaluate(tape: bytearray, max_steps: int = 32768) -> int:
+@jit(nopython=True)
+def evaluate(tape, max_steps=32768):
     """
-    Execute a BFF program on a tape.
+    Execute a BFF program on a tape (Numba JIT compiled).
 
     The tape is 128 bytes: two 64-byte programs concatenated together.
     After execution, the tape may be modified (this is how replication works).
 
     Returns the number of operations executed.
     """
-    head0 = 0  # Data pointer
-    head1 = 0  # Secondary pointer (for copying)
-    pc = 0     # Program counter
-    ops = 0    # Operations counter
+    head0 = 0
+    head1 = 0
+    pc = 0
+    ops = 0
 
     for _ in range(max_steps):
         if pc < 0 or pc >= COMBINED_SIZE:
             break
 
         # Wrap head positions (0-127)
-        head0 &= (COMBINED_SIZE - 1)
-        head1 &= (COMBINED_SIZE - 1)
+        head0 = head0 & (COMBINED_SIZE - 1)
+        head1 = head1 & (COMBINED_SIZE - 1)
 
         cmd = tape[pc]
 
@@ -86,12 +85,11 @@ def evaluate(tape: bytearray, max_steps: int = 32768) -> int:
             tape[head1] = tape[head0]
             ops += 1
         elif cmd == COPY_TO_HEAD0:
-            tape[head0] = tape[head1]  # This is how programs copy themselves!
+            tape[head0] = tape[head1]
             ops += 1
         elif cmd == LOOP_START:
             ops += 1
             if tape[head0] == 0:
-                # Skip to matching ]
                 depth = 1
                 pc += 1
                 while pc < COMBINED_SIZE and depth > 0:
@@ -106,7 +104,6 @@ def evaluate(tape: bytearray, max_steps: int = 32768) -> int:
         elif cmd == LOOP_END:
             ops += 1
             if tape[head0] != 0:
-                # Jump back to matching [
                 depth = 1
                 pc -= 1
                 while pc >= 0 and depth > 0:
@@ -118,7 +115,6 @@ def evaluate(tape: bytearray, max_steps: int = 32768) -> int:
                 pc += 1
                 if depth != 0:
                     break
-        # else: non-command bytes are ignored (NOOPs)
 
         pc += 1
 
@@ -132,34 +128,28 @@ def evaluate(tape: bytearray, max_steps: int = 32768) -> int:
 def run_soup(num_programs=1024, max_epochs=10000, seed=42, log_file=None,
              checkpoint_dir="checkpoints", checkpoint_interval=256, resume_path=None):
     """
-    Run the primordial soup simulation.
-
-    The soup is a collection of random 64-byte programs. Each epoch:
-    1. Shuffle the programs randomly
-    2. Pair them up and concatenate each pair into a 128-byte tape
-    3. Execute the BFF interpreter on each tape
-    4. Split the (now modified) tapes back into two programs
-
-    If a program happens to copy itself onto its partner, it replicates!
-    Over time, successful replicators take over the soup.
+    Run the primordial soup simulation with Numba acceleration.
     """
-    random.seed(seed)
+    np.random.seed(seed)
 
     # Initialize soup (from checkpoint or random)
     if resume_path:
-        soup, meta = load_checkpoint(resume_path)
+        from bff_analysis import load_checkpoint
+        soup_bytes, meta = load_checkpoint(resume_path)
+        # Convert bytearrays to numpy arrays
+        soup = [np.array(prog, dtype=np.uint8) for prog in soup_bytes]
         start_epoch = meta['epoch'] + 1
         num_programs = meta['num_programs']
         print(f"Resuming from {resume_path} at epoch {start_epoch}")
     else:
-        soup = [bytearray(random.randint(0, 255) for _ in range(TAPE_SIZE))
+        soup = [np.random.randint(0, 256, TAPE_SIZE, dtype=np.uint8)
                 for _ in range(num_programs)]
         start_epoch = 0
 
     # Setup logging
     if log_file:
         if resume_path:
-            log = open(log_file, 'a')  # Append when resuming
+            log = open(log_file, 'a')
         else:
             log = open(log_file, 'w')
             log.write("epoch,brotli_size,num_programs,higher_entropy\n")
@@ -169,32 +159,37 @@ def run_soup(num_programs=1024, max_epochs=10000, seed=42, log_file=None,
     if checkpoint_dir:
         os.makedirs(checkpoint_dir, exist_ok=True)
 
-    print(f"BFF Primordial Soup: {num_programs} programs, seed {seed}")
+    print(f"BFF Primordial Soup (Numba): {num_programs} programs, seed {seed}")
     print(f"{'Epoch':>8} {'Entropy':>10} {'Ops/Pair':>10}")
     print("-" * 32)
+
+    # Warm up Numba JIT
+    dummy = np.zeros(COMBINED_SIZE, dtype=np.uint8)
+    evaluate(dummy, 100)
 
     start = time.time()
 
     for epoch in range(start_epoch, max_epochs):
-        random.shuffle(soup)
+        np.random.shuffle(soup)
         total_ops = 0
 
         # === THE CORE LOOP ===
         for i in range(0, num_programs, 2):
             # Concatenate two programs
-            tape = bytearray(soup[i] + soup[i + 1])
+            tape = np.concatenate((soup[i], soup[i + 1]))
 
             # Execute BFF
             ops = evaluate(tape)
             total_ops += ops
 
             # Split back (tape may have been modified!)
-            soup[i] = tape[:TAPE_SIZE]
-            soup[i + 1] = tape[TAPE_SIZE:]
+            soup[i] = tape[:TAPE_SIZE].copy()
+            soup[i + 1] = tape[TAPE_SIZE:].copy()
         # === END CORE LOOP ===
 
         # Measure complexity via compression
-        data = b''.join(soup)
+        import zlib
+        data = b''.join(bytes(s) for s in soup)
         compressed = zlib.compress(data, level=9)
         entropy = 8.0 - (len(compressed) * 8 / len(data))
 
@@ -203,10 +198,11 @@ def run_soup(num_programs=1024, max_epochs=10000, seed=42, log_file=None,
             log.write(f"{epoch},{len(compressed)},{num_programs},{entropy:.6f}\n")
             log.flush()
 
-        # Save checkpoint
+        # Save checkpoint (convert to bytearrays for compatibility)
         if checkpoint_dir and epoch % checkpoint_interval == 0:
             path = os.path.join(checkpoint_dir, f"{epoch:010d}.dat")
-            save_checkpoint(soup, epoch, path)
+            soup_bytes = [bytearray(s) for s in soup]
+            save_checkpoint(soup_bytes, epoch, path)
 
         # Print progress
         if epoch % 100 == 0:
@@ -231,7 +227,7 @@ def run_soup(num_programs=1024, max_epochs=10000, seed=42, log_file=None,
 # ============================================================================
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="BFF Primordial Soup")
+    parser = argparse.ArgumentParser(description="BFF Primordial Soup (Numba)")
     parser.add_argument("--num", type=int, default=1024, help="Number of programs")
     parser.add_argument("--epochs", type=int, default=10000, help="Max epochs")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")

@@ -1,6 +1,6 @@
 # BFF Primordial Soup
 
-A pure Python implementation of the BFF (Brainfuck variant) primordial soup experiment from ["Computational Life: How Well-formed, Self-replicating Programs Emerge from Simple Interaction"](https://arxiv.org/abs/2406.19108) by Blaise Agüera y Arcas et al.
+A Numba-accelerated Python implementation of the BFF (Brainfuck variant) primordial soup experiment from ["Computational Life: How Well-formed, Self-replicating Programs Emerge from Simple Interaction"](https://arxiv.org/abs/2406.19108) by Blaise Agüera y Arcas et al.
 
 This demonstrates how **self-replicating programs can emerge spontaneously** from random programs through self-modification — no fitness function, no selection pressure, just random interactions.
 
@@ -18,30 +18,33 @@ The **phase transition** is detected when higher-order entropy spikes above 3.0,
 
 | File | Description |
 |------|-------------|
-| `bff_soup.py` | Core simulation — BFF interpreter and primordial soup loop |
+| `bff_soup.py` | Numba-accelerated simulation (~70x faster than pure Python) |
 | `bff_analysis.py` | Checkpoint save/load and replicator extraction tools |
 | `visualize_bff.py` | Real-time ASCII visualization of entropy and compression |
 
 ## Quick Start
 
-### Running the Python Implementation
+### Running the Simulation
 
-**Use PyPy3 instead of Python3** — it's ~24x faster due to JIT compilation:
+This is the Numba-accelerated version (~70x faster than pure Python, ~2x faster than PyPy).
 
 ```bash
-# Install PyPy (macOS)
-brew install pypy3
+# Install dependencies
+pip install numba numpy
 
 # Run simulation (defaults: 1024 programs, seed 42, logs to bff_soup.log)
-pypy3 bff_soup.py --num 1024 --epochs 50000
+python3 bff_soup.py --num 1024 --epochs 50000
 
 # In a separate terminal, watch the progress
 python3 visualize_bff.py bff_soup.log
+
+# Zoom in on last 500 epochs to see transition detail
+python3 visualize_bff.py bff_soup.log --last 500
 ```
 
-With standard Python3 (slower, but works):
+For a realistic experiment with transition probability matching the paper:
 ```bash
-python3 bff_soup.py --num 1024 --epochs 50000
+python3 bff_soup.py --num 131072 --epochs 20000
 ```
 
 ### Command-line Options
@@ -65,7 +68,7 @@ If a run is interrupted or you want to extend it, resume from the latest checkpo
 ls -t checkpoints/*.dat | head -1
 
 # Resume and run to 50000 epochs
-pypy3 bff_soup.py --resume checkpoints/0000010240.dat --epochs 50000
+python3 bff_soup.py --resume checkpoints/0000010240.dat --epochs 50000
 ```
 
 ### Analyzing Results
