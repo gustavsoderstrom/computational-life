@@ -227,9 +227,9 @@ def run_soup(num_programs=1024, max_epochs=10000, seed=42, log_file=None,
         compressed = zlib.compress(data, level=1)
         entropy = 8.0 - (len(compressed) * 8 / len(data))
 
-        # Log progress
+        # Log progress (use sample_size for correct bpb calculation in visualizer)
         if log:
-            log.write(f"{epoch},{len(compressed)},{num_programs},{entropy:.6f}\n")
+            log.write(f"{epoch},{len(compressed)},{sample_size},{entropy:.6f}\n")
             log.flush()
 
         # Save checkpoint (convert to bytearrays for compatibility)
