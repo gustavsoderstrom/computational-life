@@ -32,19 +32,16 @@ This is the Numba-accelerated version (~70x faster than pure Python, ~2x faster 
 # Install dependencies
 pip install numba numpy
 
-# Run simulation (defaults: 1024 programs, seed 42, logs to bff_soup.log)
-python3 bff_soup.py --num 1024 --epochs 50000
+# Run simulation with 131k programs (as used in the paper)
+# Runs at ~1 epoch/sec on M2 MacBook Air, transition typically occurs around epoch 12-16k
+# Expect ~4-5 hours to transition
+python3 bff_soup.py --num 131072 --epochs 20000
 
 # In a separate terminal, watch the progress
 python3 visualize_bff.py bff_soup.log
 
 # Zoom in on last 500 epochs to see transition detail
 python3 visualize_bff.py bff_soup.log --last 500
-```
-
-For a realistic experiment with transition probability matching the paper:
-```bash
-python3 bff_soup.py --num 131072 --epochs 20000
 ```
 
 ### Command-line Options
