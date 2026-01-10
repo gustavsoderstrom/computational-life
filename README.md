@@ -23,6 +23,7 @@ The **phase transition** is detected when higher-order entropy spikes above 3.0,
 | File | Description |
 |------|-------------|
 | `bff_soup.py` | Numba-accelerated simulation (~70x faster than pure Python) |
+| `bff_soup_parallel.py` | Multi-core parallel version (~7x faster than bff_soup.py) |
 | `bff_analysis.py` | Checkpoint save/load and replicator extraction tools |
 | `visualize_bff.py` | Real-time ASCII visualization of entropy and compression |
 
@@ -30,15 +31,20 @@ The **phase transition** is detected when higher-order entropy spikes above 3.0,
 
 ### Running the Simulation
 
-This is the Numba-accelerated version (~70x faster than pure Python, ~2x faster than PyPy).
+Two versions available:
+- `bff_soup.py` - Single-core (~1 epoch/sec at 131k programs)
+- `bff_soup_parallel.py` - Multi-core (~7 epochs/sec at 131k programs, **recommended**)
 
 ```bash
 # Install dependencies
 pip install numba numpy
 
 # Run simulation with 131k programs (as used in the paper)
-# Runs at ~1 epoch/sec on M2 MacBook Air, transition typically occurs around epoch 12-16k
-# Expect ~4-5 hours to transition
+# Parallel version: ~7 epochs/sec on M2 MacBook Air, transition typically around epoch 12-16k
+# Expect ~30-40 minutes to transition
+python3 bff_soup_parallel.py --num 131072 --epochs 20000
+
+# Or use single-core version (~4-5 hours to transition)
 python3 bff_soup.py --num 131072 --epochs 20000
 
 # In a separate terminal, watch the progress (always stored in bff_soup.log unless specified differently on start of bff_soup.py)
@@ -82,7 +88,7 @@ python3 bff_analysis.py checkpoints/0000001024.dat --top 10
 
 ## Running with cubff (C++ Implementation)
 
-For serious experiments, the [cubff](https://github.com/paradigms-of-intelligence/cubff) C++ implementation is ~15-30x faster:
+For maximum speed, the [cubff](https://github.com/paradigms-of-intelligence/cubff) C++ implementation is ~4x faster than the parallel Python version:
 
 ```bash
 # Clone and build
