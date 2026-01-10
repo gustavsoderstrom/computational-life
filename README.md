@@ -78,7 +78,7 @@ python3 bff_analysis.py checkpoints/0000001024.dat --top 10
 
 ## Running with cubff (C++ Implementation)
 
-For serious experiments, the [cubff](https://github.com/paradigms-of-intelligence/cubff) C++ implementation is ~100x faster:
+For serious experiments, the [cubff](https://github.com/paradigms-of-intelligence/cubff) C++ implementation is ~15-30x faster:
 
 ```bash
 # Clone and build
