@@ -107,7 +107,7 @@ python3 visualize_bff.py bff_run.log
 
 ## Metrics Explained
 
-The simulation tracks two metrics based on compression (zlib in Python, Brotli in cubff):
+The simulation tracks two metrics based on compression (using zlib in thew Python version, vs Brotli in the cubff version):
 
 **Higher-Order Entropy** (complexity metric):
 ```
