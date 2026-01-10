@@ -28,7 +28,7 @@ def read_log(filepath):
         pass
     return data
 
-def ascii_graph(values, width=60, height=15, title="", y_label="", max_epoch=None):
+def ascii_graph(values, width=60, height=15, title="", y_label="", min_epoch=0, max_epoch=None):
     """Create an ASCII graph of values."""
     if not values:
         return f"{title}\n  No data yet..."
@@ -74,7 +74,8 @@ def ascii_graph(values, width=60, height=15, title="", y_label="", max_epoch=Non
 
     lines.append(f"  {min_val:8.3f} ┤" + "─" * width)
     lines.append(f"           └{'─' * (width//2)}┬{'─' * (width//2)}")
-    lines.append(f"            0{' ' * (width//2 - 2)}epochs{' ' * (width//2 - 6)}{max_epoch}")
+    start_label = str(min_epoch)
+    lines.append(f"            {start_label}{' ' * (width//2 - len(start_label))}epochs{' ' * (width//2 - 6)}{max_epoch}")
 
     return "\n".join(lines)
 
@@ -95,13 +96,24 @@ def status_line(data):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python visualize_bff.py <log_file>")
+        print("Usage: python visualize_bff.py <log_file> [--last N]")
         print("Example: python visualize_bff.py bff_run.log")
+        print("         python visualize_bff.py bff_run.log --last 500")
         sys.exit(1)
 
     log_file = sys.argv[1]
 
-    print(f"\n🧬 BFF Experiment Visualizer")
+    # Parse optional --last argument for zooming
+    last_n = None
+    if len(sys.argv) >= 4 and sys.argv[2] == "--last":
+        try:
+            last_n = int(sys.argv[3])
+        except ValueError:
+            print("Error: --last requires a number")
+            sys.exit(1)
+
+    zoom_msg = f" (last {last_n} epochs)" if last_n else ""
+    print(f"\n🧬 BFF Experiment Visualizer{zoom_msg}")
     print(f"📁 Monitoring: {log_file}")
     print("Press Ctrl+C to stop\n")
 
@@ -113,18 +125,26 @@ def main():
             # Read current data
             data = read_log(log_file)
 
+            # Apply zoom if --last N specified
+            if last_n and data['epoch']:
+                for key in data:
+                    data[key] = data[key][-last_n:]
+
             print("=" * 75)
-            print("  BFF PRIMORDIAL SOUP EXPERIMENT - REAL-TIME MONITOR")
+            title_suffix = f" (last {last_n} epochs)" if last_n else ""
+            print(f"  BFF PRIMORDIAL SOUP EXPERIMENT - REAL-TIME MONITOR{title_suffix}")
             print("=" * 75)
             print()
 
             # Show entropy graph
+            min_ep = data['epoch'][0] if data['epoch'] else 0
             max_ep = data['epoch'][-1] if data['epoch'] else 0
             print(ascii_graph(
                 data['higher_entropy'],
                 width=60,
                 height=12,
                 title="Higher-Order Entropy (complexity metric)",
+                min_epoch=min_ep,
                 max_epoch=max_ep
             ))
             print()
@@ -139,6 +159,7 @@ def main():
                     width=60,
                     height=8,
                     title="Bits per Byte (compression - lower = more structure)",
+                    min_epoch=min_ep,
                     max_epoch=max_ep
                 ))
             print()

@@ -208,10 +208,9 @@ def run_soup(num_programs=1024, max_epochs=10000, seed=42, log_file=None,
             avg_ops = total_ops / (num_programs // 2)
             print(f"{epoch:8d} {entropy:10.4f} {avg_ops:10.1f}")
 
-        # Detect transition
-        if entropy > 3.0:
-            print(f"\n*** TRANSITION at epoch {epoch}! Entropy: {entropy:.2f} ***")
-            break
+        # Detect transition (log but don't stop)
+        if entropy > 3.0 and epoch % 100 == 0:
+            print(f"*** TRANSITION at epoch {epoch}! Entropy: {entropy:.2f} ***")
 
     elapsed = time.time() - start
     print(f"\nDone in {elapsed:.1f}s ({epoch/elapsed:.0f} epochs/sec)")
