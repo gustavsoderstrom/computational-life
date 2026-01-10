@@ -86,13 +86,18 @@ def status_line(data):
 
     epoch = data['epoch'][-1]
     entropy = data['higher_entropy'][-1]
-    brotli = data['brotli_size'][-1]
+    compressed = data['brotli_size'][-1]
+    num_programs = data['num_programs'][-1]
+
+    # Calculate compression ratio (100% = no compression, lower = more compressed)
+    original_size = num_programs * 64
+    compression_pct = (compressed / original_size) * 100
 
     # Detect if we might have a transition
     max_entropy = max(data['higher_entropy']) if data['higher_entropy'] else 0
     status = "🔴 Pre-life" if max_entropy < 1.0 else "🟢 TRANSITION DETECTED!" if max_entropy > 3.0 else "🟡 Evolving..."
 
-    return f"Epoch: {epoch:,} | Entropy: {entropy:.4f} | Max Entropy: {max_entropy:.4f} | Compressed: {brotli:,} | {status}"
+    return f"Epoch: {epoch:,} | Entropy: {entropy:.4f} | Max Entropy: {max_entropy:.4f} | Compression: {compression_pct:.1f}% | {status}"
 
 def main():
     if len(sys.argv) < 2:
