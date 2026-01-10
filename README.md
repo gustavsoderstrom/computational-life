@@ -8,7 +8,7 @@ This demonstrates how **self-replicating programs can emerge spontaneously** fro
 
 ## How It Works
 
-1. Start with a "soup" of random 64-byte programs with completely randomized byte values (only 10 of which correspond to actual brainfuck instructions, meaning only about ~4% of cells will actually have any type of instruction at all in them and, the rest are jsut no-ops)
+1. Start with a "soup" of random 64-byte programs with completely randomized byte values (only 10 of which correspond to actual brainfuck instructions, meaning only about ~4% of cells will actually have any type of instruction at all in them and, the rest are just no-ops)
 2. Each epoch: shuffle the programs, pair them up, concatenate into 128-byte tapes
 3. Execute the BFF interpreter on each tape (programs can modify themselves and each other)
 4. Split tapes back into programs
