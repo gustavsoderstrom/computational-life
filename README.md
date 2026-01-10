@@ -4,8 +4,6 @@ A Numba-accelerated Python implementation of the BFF (Brainfuck variant) primord
 
 This demonstrates how **self-replicating programs can emerge spontaneously** from random programs through self-modification — no fitness function, no selection pressure, just random interactions.
 
-![Computational Life - BFF Primordial Soup experiment showing phase transition](computational_life.jpg)
-
 ## How It Works
 
 1. Start with a "soup" of random 64-byte programs
@@ -39,7 +37,7 @@ pip install numba numpy
 # Expect ~4-5 hours to transition
 python3 bff_soup.py --num 131072 --epochs 20000
 
-# In a separate terminal, watch the progress. E.g. (always stored in bff_soup.log unless specified differently on start of bff_soup.py)
+# In a separate terminal, watch the progress (always stored in bff_soup.log unless specified differently on start of bff_soup.py)
 python3 visualize_bff.py bff_soup.log
 
 # Zoom in on last 500 epochs to see transition detail E.g.
@@ -63,16 +61,16 @@ python3 visualize_bff.py bff_soup.log --last 500
 If a run is interrupted or you want to extend it, resume from the latest checkpoint:
 
 ```bash
-# Find the latest checkpoint. E.g. (with the .dat file for that specific run)
+# Find the latest checkpoint (using the .dat file for that specific run)
 ls -t checkpoints/*.dat | head -1
 
-# Resume and run to 50000 epochs E.g. (with the .dat file for that specific run)
+# Resume and run to 50000 epochs (using the .dat file for that specific run)
 python3 bff_soup.py --resume checkpoints/0000010240.dat --epochs 50000
 ```
 
 ### Analyzing Results
 
-# After a run (or during), examine emergent replicators: E.g. (with the .dat file for that specific run)
+# After a run (or during), examine emergent replicators: (with the .dat file for that specific run)
 
 ```bash
 python3 bff_analysis.py checkpoints/0000001024.dat --top 10
