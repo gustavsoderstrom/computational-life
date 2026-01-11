@@ -18,6 +18,46 @@ The **phase transition** is detected when higher-order entropy spikes above 3.0,
 
 **No mutation:** This Python implementation deliberately uses no external mutation. Programs only change through self-modification during BFF execution. This demonstrates the paper's key insight — self-replicators can emerge purely from program interactions without any external randomness or mutation pressure.
 
+## BFF Instruction Set
+
+BFF (Brainfuck variant) modifies standard Brainfuck for self-modification instead of I/O. It uses two head pointers on a shared tape:
+
+| Command | Description |
+|---------|-------------|
+| `>` `<` | Move head0 right/left |
+| `}` `{` | Move head1 right/left |
+| `+` `-` | Increment/decrement byte at head0 |
+| `.` | Copy byte from head0 position to head1 position |
+| `,` | Copy byte from head1 position to head0 position |
+| `[` | Jump past matching `]` if byte at head0 is 0 |
+| `]` | Jump back to matching `[` if byte at head0 is not 0 |
+
+**Note:** Standard Brainfuck's I/O commands (`.` and `,`) are repurposed for copying between heads.
+
+### The Emergent Palindrome Replicator
+
+A replicator that emerges amy look like the follwoingt and often has a palindrome-like pattern:
+
+```
+{[<},]],}<[{
+```
+
+**How it works:**
+1. `{` — Move head1 left (wraps to position 127)
+2. `[<},]` — Copy loop: copy byte from head0→head1, move head0 left, head1 right, repeat until head0 hits a zero byte
+3. `]` — End outer structure
+4. `}<[{` — Near-mirror of the start
+
+**Why palindrome structure?**
+
+When two programs meet on a 128-byte tape:
+```
+|  Program A (0-63)  |  Program B (64-127)  |
+     ↑ head0 reads        ↑ head1 writes
+```
+
+The replicator **copies itself backwards** into the other program's space. The palindrome structure ensures that when concatenated with another copy, the combined tape still contains a valid copy loop — making it robust to being "cut" at different points.
+
 ## Files
 
 | File | Description |
