@@ -34,7 +34,7 @@ BFF (Brainfuck variant) modifies standard Brainfuck for self-modification instea
 
 **Note:** Standard Brainfuck's I/O commands (`.` and `,`) are repurposed for copying between heads.
 
-### The Emergent Palindrome Replicator
+### Emergent Replicators
 
 A replicator that emerges may look like the following and often has a palindrome-like pattern:
 
