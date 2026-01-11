@@ -18,6 +18,14 @@ import os
 
 from bff_analysis import save_checkpoint
 
+
+def shannon_entropy(data):
+    """Compute Shannon entropy (H0) in bits per byte."""
+    counts = np.bincount(np.frombuffer(data, dtype=np.uint8), minlength=256)
+    probs = counts[counts > 0] / len(data)
+    return -np.sum(probs * np.log2(probs))
+
+
 # ============================================================================
 # BFF Interpreter (Numba-compatible)
 # ============================================================================
@@ -224,7 +232,9 @@ def run_soup(num_programs=1024, max_epochs=10000, seed=42, log_file=None,
         sample_size = min(4096, num_programs)
         data = soup[:sample_size].tobytes()
         compressed = zlib.compress(data, level=1)
-        entropy = 8.0 - (len(compressed) * 8 / len(data))
+        h0 = shannon_entropy(data)
+        bpb = len(compressed) * 8 / len(data)
+        entropy = h0 - bpb
 
         # Log progress (use sample_size for correct bpb calculation in visualizer)
         if log:

@@ -101,11 +101,12 @@ python3 visualize_bff.py bff_run.log
 
 The simulation tracks two metrics based on compression (using zlib in the Python version, vs Brotli in the cubff version):
 
-**Higher-Order Entropy** (complexity metric):
+**Higher-Order Entropy** (complexity metric, as used in the paper):
 ```
-entropy = 8.0 - (compressed_size × 8 / original_size)
+entropy = H0 - bpb
 ```
-- Measures "bits saved per byte" through compression
+Where H0 is Shannon entropy and bpb is bits-per-byte after compression.
+- Measures "bits saved per byte" through compression beyond simple character frequencies
 - **Random soup ≈ 0**: Incompressible noise, no patterns
 - **Structured soup > 3**: Repetitive patterns (replicators) compress well
 - A sudden spike indicates phase transition — replicators have taken over
