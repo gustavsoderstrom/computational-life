@@ -36,7 +36,7 @@ BFF (Brainfuck variant) modifies standard Brainfuck for self-modification instea
 
 ### The Emergent Palindrome Replicator
 
-A replicator that emerges amy look like the follwoingt and often has a palindrome-like pattern:
+A replicator that emerges may look like the following and often has a palindrome-like pattern:
 
 ```
 {[<},]],}<[{
@@ -44,7 +44,12 @@ A replicator that emerges amy look like the follwoingt and often has a palindrom
 
 **How it works:**
 1. `{` — Move head1 left (wraps to position 127)
-2. `[<},]` — Copy loop: copy byte from head0→head1, move head0 left, head1 right, repeat until head0 hits a zero byte
+2. `[<},]` — Copy loop:
+   - `[` — Start loop (exits when byte at head0 is 0)
+   - `<` — Move head0 (destination) left
+   - `}` — Move head1 (source) right
+   - `,` — Copy byte from head1 to head0
+   - `]` — Jump back to `[` if byte at head0 ≠ 0
 3. `]` — End outer structure
 4. `}<[{` — Near-mirror of the start
 
@@ -53,7 +58,7 @@ A replicator that emerges amy look like the follwoingt and often has a palindrom
 When two programs meet on a 128-byte tape:
 ```
 |  Program A (0-63)  |  Program B (64-127)  |
-     ↑ head0 reads        ↑ head1 writes
+     ↑ head1 (source)     ↑ head0 (destination)
 ```
 
 The replicator **copies itself backwards** into the other program's space. The palindrome structure ensures that when concatenated with another copy, the combined tape still contains a valid copy loop — making it robust to being "cut" at different points.
