@@ -22,8 +22,7 @@ The **phase transition** is detected when higher-order entropy spikes above 3.0,
 
 | File | Description |
 |------|-------------|
-| `bff_soup.py` | Numba-accelerated simulation (~70x faster than pure Python) |
-| `bff_soup_parallel.py` | Multi-core parallel version (~7x faster than bff_soup.py) |
+| `bff_soup.py` | Numba-accelerated simulation (~7 epochs/sec at 131k programs on M2 MacBook Air) |
 | `bff_analysis.py` | Checkpoint save/load and replicator extraction tools |
 | `visualize_bff.py` | Real-time ASCII visualization of entropy and compression |
 
@@ -31,23 +30,16 @@ The **phase transition** is detected when higher-order entropy spikes above 3.0,
 
 ### Running the Simulation
 
-Two versions available:
-- `bff_soup.py` - Single-core (~1 epoch/sec at 131k programs)
-- `bff_soup_parallel.py` - Multi-core (~7 epochs/sec at 131k programs, **recommended**)
-
 ```bash
 # Install dependencies
 pip install numba numpy
 
 # Run simulation with 131k programs (as used in the paper)
-# Parallel version: ~7 epochs/sec on M2 MacBook Air, transition typically around epoch 12-16k
+# ~7 epochs/sec on M2 MacBook Air, transition typically around epoch 12-16k
 # Expect ~30-40 minutes to transition
-python3 bff_soup_parallel.py --num 131072 --epochs 20000
-
-# Or use single-core version (~4-5 hours to transition)
 python3 bff_soup.py --num 131072 --epochs 20000
 
-# In a separate terminal, watch the progress (always stored in bff_soup.log unless specified differently on start of bff_soup.py)
+# In a separate terminal, watch the progress
 python3 visualize_bff.py bff_soup.log
 
 # Zoom in on last 500 epochs to see transition detail E.g.
@@ -88,7 +80,7 @@ python3 bff_analysis.py checkpoints/0000001024.dat --top 10
 
 ## Running with cubff (C++ Implementation)
 
-For maximum speed, the [cubff](https://github.com/paradigms-of-intelligence/cubff) C++ implementation is ~4x faster than the parallel Python version:
+For maximum speed, the [cubff](https://github.com/paradigms-of-intelligence/cubff) C++ implementation is ~4x faster than this Python version:
 
 ```bash
 # Clone and build
@@ -107,7 +99,7 @@ python3 visualize_bff.py bff_run.log
 
 ## Metrics Explained
 
-The simulation tracks two metrics based on compression (using zlib in thew Python version, vs Brotli in the cubff version):
+The simulation tracks two metrics based on compression (using zlib in the Python version, vs Brotli in the cubff version):
 
 **Higher-Order Entropy** (complexity metric):
 ```

@@ -2,8 +2,8 @@
 """
 Numba-accelerated BFF Primordial Soup Simulation
 
-A fast implementation of the BFF (Brainfuck variant) primordial soup
-experiment from "Computational Life" by Blaise Aguera y Arcas et al.
+Evaluates multiple tape pairs in parallel using Numba's prange for multi-core execution.
+
 Requires: pip install numba numpy
 
 Usage:
@@ -11,7 +11,7 @@ Usage:
 """
 
 import numpy as np
-from numba import jit
+from numba import jit, prange
 import time
 import argparse
 import os
@@ -121,6 +121,43 @@ def evaluate(tape, max_steps=32768):
     return ops
 
 
+@jit(nopython=True, parallel=True)
+def run_epoch_parallel(soup, num_pairs):
+    """
+    Process all tape pairs in parallel using Numba prange.
+
+    Args:
+        soup: 2D array of shape (num_programs, 64)
+        num_pairs: number of pairs to process
+
+    Returns:
+        total_ops: sum of operations across all pairs
+    """
+    total_ops = 0
+
+    for i in prange(num_pairs):
+        # Create combined tape for this pair
+        tape = np.empty(COMBINED_SIZE, dtype=np.uint8)
+        idx0 = i * 2
+        idx1 = i * 2 + 1
+
+        # Copy both programs into tape
+        for j in range(TAPE_SIZE):
+            tape[j] = soup[idx0, j]
+            tape[j + TAPE_SIZE] = soup[idx1, j]
+
+        # Execute BFF
+        ops = evaluate(tape)
+        total_ops += ops
+
+        # Write back modified tape
+        for j in range(TAPE_SIZE):
+            soup[idx0, j] = tape[j]
+            soup[idx1, j] = tape[j + TAPE_SIZE]
+
+    return total_ops
+
+
 # ============================================================================
 # Primordial Soup
 # ============================================================================
@@ -128,23 +165,24 @@ def evaluate(tape, max_steps=32768):
 def run_soup(num_programs=1024, max_epochs=10000, seed=42, log_file=None,
              checkpoint_dir="checkpoints", checkpoint_interval=256, resume_path=None):
     """
-    Run the primordial soup simulation with Numba acceleration.
+    Run the primordial soup simulation with parallel Numba acceleration.
     """
     np.random.seed(seed)
 
-    # Initialize soup (from checkpoint or random)
+    # Initialize soup as 2D array (from checkpoint or random)
     if resume_path:
         from bff_analysis import load_checkpoint
         soup_bytes, meta = load_checkpoint(resume_path)
-        # Convert bytearrays to numpy arrays
-        soup = [np.array(prog, dtype=np.uint8) for prog in soup_bytes]
+        # Convert bytearrays to 2D numpy array
+        soup = np.array([list(prog) for prog in soup_bytes], dtype=np.uint8)
         start_epoch = meta['epoch'] + 1
         num_programs = meta['num_programs']
         print(f"Resuming from {resume_path} at epoch {start_epoch}")
     else:
-        soup = [np.random.randint(0, 256, TAPE_SIZE, dtype=np.uint8)
-                for _ in range(num_programs)]
+        soup = np.random.randint(0, 256, (num_programs, TAPE_SIZE), dtype=np.uint8)
         start_epoch = 0
+
+    num_pairs = num_programs // 2
 
     # Setup logging
     if log_file:
@@ -163,50 +201,45 @@ def run_soup(num_programs=1024, max_epochs=10000, seed=42, log_file=None,
     print(f"{'Epoch':>8} {'Entropy':>10} {'Ops/Pair':>10}")
     print("-" * 32)
 
-    # Warm up Numba JIT
-    dummy = np.zeros(COMBINED_SIZE, dtype=np.uint8)
-    evaluate(dummy, 100)
+    # Warm up Numba JIT (both sequential and parallel paths)
+    dummy = np.zeros((4, TAPE_SIZE), dtype=np.uint8)
+    run_epoch_parallel(dummy, 2)
 
     start = time.time()
 
+    # Pre-allocate shuffle indices
+    indices = np.arange(num_programs)
+
     for epoch in range(start_epoch, max_epochs):
-        np.random.shuffle(soup)
-        total_ops = 0
+        # Shuffle by permuting indices and reordering soup
+        np.random.shuffle(indices)
+        soup = soup[indices]
 
-        # === THE CORE LOOP ===
-        for i in range(0, num_programs, 2):
-            # Concatenate two programs
-            tape = np.concatenate((soup[i], soup[i + 1]))
-
-            # Execute BFF
-            ops = evaluate(tape)
-            total_ops += ops
-
-            # Split back (tape may have been modified!)
-            soup[i] = tape[:TAPE_SIZE].copy()
-            soup[i + 1] = tape[TAPE_SIZE:].copy()
+        # === THE CORE LOOP (PARALLEL) ===
+        total_ops = run_epoch_parallel(soup, num_pairs)
         # === END CORE LOOP ===
 
-        # Measure complexity via compression
+        # Measure complexity via compression (sample for speed)
         import zlib
-        data = b''.join(bytes(s) for s in soup)
-        compressed = zlib.compress(data, level=9)
+        sample_size = min(4096, num_programs)
+        data = soup[:sample_size].tobytes()
+        compressed = zlib.compress(data, level=1)
         entropy = 8.0 - (len(compressed) * 8 / len(data))
 
-        # Log progress
+        # Log progress (use sample_size for correct bpb calculation in visualizer)
         if log:
-            log.write(f"{epoch},{len(compressed)},{num_programs},{entropy:.6f}\n")
+            log.write(f"{epoch},{len(compressed)},{sample_size},{entropy:.6f}\n")
             log.flush()
 
         # Save checkpoint (convert to bytearrays for compatibility)
         if checkpoint_dir and epoch % checkpoint_interval == 0:
             path = os.path.join(checkpoint_dir, f"{epoch:010d}.dat")
-            soup_bytes = [bytearray(s) for s in soup]
+            soup_bytes = [bytearray(row) for row in soup]
             save_checkpoint(soup_bytes, epoch, path)
 
         # Print progress
         if epoch % 100 == 0:
-            avg_ops = total_ops / (num_programs // 2)
+            avg_ops = total_ops / num_pairs
             print(f"{epoch:8d} {entropy:10.4f} {avg_ops:10.1f}")
 
         # Detect transition (log but don't stop)
